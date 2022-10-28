@@ -113,7 +113,7 @@ FROM groups ORDER BY id ASC LIMIT $1`
 	var previousGroup *api.Group
 
 	for rows.Next() {
-		group, err := convertToGroup(rows)
+		group, _, err := convertToGroup(rows)
 		if err != nil {
 			_ = rows.Close()
 			s.logger.Error("Error scanning groups.", zap.Any("in", in), zap.Error(err))
@@ -214,7 +214,12 @@ func (s *ConsoleServer) UpdateGroup(ctx context.Context, in *console.UpdateGroup
 		return nil, status.Error(codes.InvalidArgument, "Requires a valid group ID.")
 	}
 
-	err = UpdateGroup(ctx, s.logger, s.db, groupID, uuid.Nil, uuid.Nil, in.Name, in.LangTag, in.Description, in.AvatarUrl, in.Metadata, in.Open, int(in.MaxCount.Value))
+	var maxCount int
+	if in.MaxCount != nil {
+		maxCount = int(in.MaxCount.Value)
+	}
+
+	err = UpdateGroup(ctx, s.logger, s.db, groupID, uuid.Nil, uuid.Nil, in.Name, in.LangTag, in.Description, in.AvatarUrl, in.Metadata, in.Open, maxCount)
 	if err != nil {
 		return nil, err
 	}
