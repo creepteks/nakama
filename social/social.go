@@ -282,8 +282,19 @@ func (c *Client) CheckGoogleToken(ctx context.Context, idToken string) (*GoogleP
 		c.googleMutex.RUnlock()
 		c.googleMutex.Lock()
 		if c.googleCertsRefreshAt < time.Now().UTC().Unix() {
+			// neo : proxy the following request as login via google is not allowed by MF google
+			proxyUrl, proxyErr := url.Parse("http://user:pass@proxy_ip:port")
+			if proxyErr != nil {
+				panic(proxyErr)
+			}
+			defaultTr := c.client.Transport
+			c.client.Transport = &http.Transport{Proxy: http.ProxyURL(proxyUrl)}
+			// neo : end of proxy
 			certs := make(map[string]string, 3)
 			err := c.request(ctx, "google cert", "https://www.googleapis.com/oauth2/v1/certs", nil, &certs)
+			// neo: revert the transport to the original one so that we can use the original transport to make the request
+			c.client.Transport = defaultTr
+			// neo: end of revert
 			if err != nil {
 				c.googleMutex.Unlock()
 				return nil, err
