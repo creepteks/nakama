@@ -30,6 +30,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -283,7 +284,8 @@ func (c *Client) CheckGoogleToken(ctx context.Context, idToken string) (*GoogleP
 		c.googleMutex.Lock()
 		if c.googleCertsRefreshAt < time.Now().UTC().Unix() {
 			// neo : proxy the following request as login via google is not allowed by MF google
-			proxyUrl, proxyErr := url.Parse("http://user:pass@proxy_ip:port")
+			proxyIP := os.Getenv("PROXY_IP")
+			proxyUrl, proxyErr := url.Parse("http://" + proxyIP)
 			if proxyErr != nil {
 				panic(proxyErr)
 			}
